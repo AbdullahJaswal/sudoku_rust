@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use rand::prelude::SliceRandom;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum Digit {
     Zero = 0,
     One,
@@ -38,7 +38,6 @@ type Grid = [[Digit; 9]; 9];
 #[derive(Debug)]
 pub struct Sudoku {
     board: Grid,
-    //state: Grid,
 }
 
 impl Sudoku {
@@ -51,29 +50,9 @@ impl Sudoku {
         board
     }
 
-    fn get_solved(&self) -> Grid {
-        self.board
-    }
-
-    /*fn set_solved(&mut self, grid: Grid) {
-        self.solved = grid;
-    }*/
-
     fn reset_solved(&mut self) {
         self.board = [[Digit::Zero; 9]; 9];
     }
-
-    /*fn get_current(&self) -> GridCurrent {
-        self.current
-    }
-
-    fn get_solved_node(&self, x: usize, y: usize) -> Digit {
-        self.solved[x][y]
-    }
-
-    fn get_current_node(&self, x: usize, y: usize) -> Digit {
-        self.current[x][y]
-    }*/
 
     fn set_board_node(&mut self, row: usize, col: usize, digit: u8) {
         self.board[row][col] = Digit::from_u8(digit);
@@ -83,8 +62,33 @@ impl Sudoku {
         let mut used_nodes: HashSet<u8> = HashSet::new();
 
         for i in 0..9 {
-            used_nodes.insert(self.board[i][col] as u8);
-            used_nodes.insert(self.board[row][i] as u8);
+            // nodes in row
+            if self.board[row][i] != Digit::Zero {
+                used_nodes.insert(self.board[row][i] as u8);
+            }
+
+            // nodes in column
+            if self.board[i][col] != Digit::Zero {
+                used_nodes.insert(self.board[i][col] as u8);
+            }
+
+            if used_nodes.len() == 9 {
+                return used_nodes;
+            }
+        }
+
+        // nodes in grid unit
+        let grid_row_start = (row / 3) * 3;
+        let grid_col_start = (col / 3) * 3;
+
+        for r in grid_row_start..grid_row_start + 3 {
+            for c in grid_col_start..grid_col_start + 3 {
+                used_nodes.insert(self.board[r][c] as u8);
+
+                if used_nodes.len() == 9 {
+                    return used_nodes;
+                }
+            }
         }
 
         used_nodes
@@ -100,7 +104,7 @@ impl Sudoku {
         !unit.is_superset(&(1..=9).collect())
     }
 
-    fn generate_solved_grid(&mut self) -> Grid {
+    fn generate_solved_grid(&mut self) {
         let mut rng = rand::thread_rng();
 
         'outer: loop {
@@ -121,8 +125,6 @@ impl Sudoku {
 
             break;
         }
-
-        self.get_solved()
     }
 
     pub fn print_board(&self) {
@@ -130,10 +132,18 @@ impl Sudoku {
 
         for row in 0..9 {
             for col in 0..9 {
-                board_str = format!("{}{}  ", board_str, self.board[row][col] as u8);
+                board_str = format!("{}{} ", board_str, self.board[row][col] as u8);
+
+                if col == 2 || col == 5 {
+                    board_str = format!("{}❘ ", board_str)
+                }
             }
 
             board_str = format!("{}\n", board_str);
+
+            if row == 2 || row == 5 {
+                board_str = format!("{}― ― ― ― ― ― ― ― ― ― ―\n", board_str)
+            }
         }
 
         print!("{}", board_str);
